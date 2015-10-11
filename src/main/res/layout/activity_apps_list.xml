@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layoutDirection="ltr">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:paddingRight="10dp"
+            android:layout_marginBottom="12dp"
+            android:text="Password"
+            android:layout_alignParentLeft="true"
+            android:gravity="right"
+            android:id="@+id/passwordLabel"/>
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/passwordText"
+            android:inputType="text"
+            android:paddingRight="10dp"
+            android:capitalize="none"
+            android:layout_toRightOf="@id/passwordLabel"
+            android:layout_weight="1"/>
+        <Button
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/passwordSet"
+            android:layout_alignParentRight="true"
+            android:text="Set"
+            android:onClick="setPassword"
+            android:layout_marginRight="10dp"/>
+
+    </LinearLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:text="Device Settings"
+            android:id="@+id/deviceSettings"
+            android:onClick="openSettings"/>
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:text="App Settings"
+            android:id="@+id/appSettings"
+            android:onClick="openAppSettings"
+            android:layout_toRightOf="@id/deviceSettings"/>
+</RelativeLayout>
+    <RelativeLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:text="Contacts"
+            android:id="@+id/replaceContactsApp"
+            android:onClick="replaceContactsApp"/>
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:text="Phone"
+            android:id="@+id/phone"
+            android:onClick="openPhone"
+            android:layout_toRightOf="@id/replaceContactsApp"/>
+        </RelativeLayout>
+    <RelativeLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:text="Add Quick Dial"
+            android:id="@+id/addPhone"
+            android:onClick="addPhone" />
+        <View android:layout_height="1dp"
+            android:layout_width="fill_parent"
+            android:background="#FFFFFF"
+            android:layout_below="@id/addPhone"
+            android:layout_marginTop="7dp"
+            android:layout_marginBottom="3dp"/>
+    </RelativeLayout>
+    <ListView
+        android:id="@+id/apps_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#555555"
+        >
+    </ListView>
+</LinearLayout>
