@@ -2,8 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
-    tools:context=".LauncherActivity">
+    android:background="@color/black">
 
     <RelativeLayout
         android:id="@+id/adheader"
@@ -11,28 +10,13 @@
         android:layout_height="50dp">
 
         <TextView
-            android:id="@+id/adbatteryCharge"
+            android:id="@+id/adMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
             android:layout_marginLeft="10dp"
             android:layout_marginTop="10dp" />
-
-        <TextView
-            android:id="@+id/adbatteryLevel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_toRightOf="@id/batteryCharge" />
-
-        <TextView
-            android:id="@+id/adcurrentTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:layout_marginTop="10dp"
-            android:layout_toRightOf="@id/batteryLevel" />
 
         <View
             android:layout_width="fill_parent"
@@ -45,7 +29,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/header">
+        android:layout_below="@id/adheader">
 
         <ListView
             android:id="@+id/drawer_apps_list"

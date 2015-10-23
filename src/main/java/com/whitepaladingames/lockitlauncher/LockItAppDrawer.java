@@ -12,31 +12,44 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class LockItAppDrawer extends Activity {
+    private boolean _isAdmin;
+    private ArrayList<String> _blockedApps;
+    private String _adminEmail;
+    private ListView list;
+    private PackageManager manager;
+    private List<AppDetail> apps;
+    private String _deviceName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_drawer_launcher);
+        _isAdmin = getIntent().getBooleanExtra(AppConstants.IS_ADMIN_MODE, false);
+        _blockedApps = getIntent().getStringArrayListExtra(AppConstants.BLOCKED_APPS_LIST);
+        _adminEmail = getIntent().getStringExtra(AppConstants.ADMIN_EMAIL);
+        _deviceName = getIntent().getStringExtra(AppConstants.DEVICE_NAME);
+        if (_isAdmin) {
+            ((TextView)findViewById(R.id.adMode)).setText(AppConstants.ADMIN_MODE_LABEL);
+        }
         loadApps();
         loadListView(0);
         addClickListener();
     }
 
-    private PackageManager manager;
-    private List<AppDetail> apps;
-
     private void loadApps(){
         manager = getPackageManager();
-        apps = new ArrayList();
+        apps = new ArrayList<>();
 
         Intent i = new Intent(Intent.ACTION_MAIN, null);
         i.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -54,7 +67,6 @@ public class LockItAppDrawer extends Activity {
         Collections.sort(apps);
     }
 
-    private ListView list;
     private void loadListView(int position){
         list = (ListView)findViewById(R.id.drawer_apps_list);
 
@@ -75,10 +87,15 @@ public class LockItAppDrawer extends Activity {
                 TextView appLabel = (TextView)convertView.findViewById(R.id.item_app_label);
                 appLabel.setText(apps.get(position).label);
 
+                if (!_isAdmin && _blockedApps.contains(apps.get(position).name)) {
+                    appLabel.setText(apps.get(position).label + AppConstants.BLOCKED_APP);
+                    apps.get(position).type = AppConstants.BLOCKED_APP_TYPE;
+                }
+
                 TextView appName = (TextView)convertView.findViewById(R.id.item_app_name);
                 appName.setText(apps.get(position).name);
 
-                if (!apps.get(position).type.equals("tel"))
+                if (!apps.get(position).type.equals(AppConstants.TELEPHONE_APP_TYPE))
                     appName.setTextColor(Color.parseColor(AppConstants.HIDDEN_TEXT_COLOR));
 
                 return convertView;
@@ -106,6 +123,11 @@ public class LockItAppDrawer extends Activity {
                             break;
                     }
                     i = new Intent(context, c);
+                } else if (apps.get(pos).type.equals(AppConstants.BLOCKED_APP_TYPE)) {
+                    i = new Intent(context, BlockedAppActivity.class);
+                    i.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
+                    i.putExtra(AppConstants.APP_NAME, apps.get(pos).label);
+                    i.putExtra(AppConstants.DEVICE_NAME, _deviceName);
                 } else {
                     i = manager.getLaunchIntentForPackage(apps.get(pos).name);
                 }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#333333"
+    android:layout_centerHorizontal="true">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/appName"
+        android:layout_marginTop="30dp"
+        android:layout_centerHorizontal="true"/>
+    <TextView
+        android:text="This app is blocked by the administrator."
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/text1"
+        android:layout_marginTop="30dp"
+        android:layout_below="@id/appName"/>
+    <Button
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:text="Cancel"
+        android:onClick="cancelButton"
+        android:layout_marginTop="30dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/text1"
+        android:id="@+id/blockedCancelButton"
+        />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/blockedCancelButton"
+        android:id="@+id/adminLayout"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:id="@+id/adminEmail"
+            android:layout_centerHorizontal="true"
+            />
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:layout_centerHorizontal="true"
+            android:text="Request Access"
+            android:layout_below="@id/adminEmail"
+            android:onClick="sendRequest"/>
+    </RelativeLayout>
+
+</RelativeLayout>

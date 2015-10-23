@@ -59,9 +59,30 @@
             android:id="@+id/appSettings"
             android:onClick="openAppSettings"
             android:layout_toRightOf="@id/deviceSettings"/>
+        </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:text="Play Store"
+            android:id="@+id/playStore"
+            android:onClick="openPlayStore"/>
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:text="All Apps"
+            android:id="@+id/appDrawer"
+            android:onClick="openAppDrawer"
+            android:layout_toRightOf="@id/playStore"/>
 </RelativeLayout>
     <RelativeLayout android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:id="@+id/phoneLayout">
         <Button
             android:layout_width="150dp"
             android:layout_height="wrap_content"
@@ -80,7 +101,8 @@
             android:layout_toRightOf="@id/replaceContactsApp"/>
         </RelativeLayout>
     <RelativeLayout android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:id="@+id/quickPhoneLayout">
         <Button
             android:layout_width="150dp"
             android:layout_height="wrap_content"

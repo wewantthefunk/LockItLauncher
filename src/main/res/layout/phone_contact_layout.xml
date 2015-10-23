@@ -43,4 +43,16 @@
             android:layout_weight="1"
             android:layout_marginRight="10dp"/>
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/addTextMsg"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add text message quick link"/>
+    </LinearLayout>
 </LinearLayout>
