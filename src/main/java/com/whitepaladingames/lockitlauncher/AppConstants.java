@@ -1,8 +1,5 @@
 package com.whitepaladingames.lockitlauncher;
 
-/**
- * Created by Chris-laptop on 9/29/2015.
- */
 public class AppConstants {
     public static final String DEFAULT_PWD_HINT = "12345";
     public static final String EMPTY_STRING = "";
@@ -58,6 +55,12 @@ public class AppConstants {
     public static final String APP_NAME = "aName";
     public static final String DEVICE_NAME = "dName";
     public static final String SKIPPED_APP_TYPE = "skp";
+    public static final int DEFAULT_SCREEN_TIMEOUT = 60;
+    public static final String DEFAULT_USER = "default";
+    public static final String TRUE = "true";
+    public static final String FALSE = "false";
+    public static final String ADMIN_MODE = "adminMode";
+    public static final String ADMIN_MODE_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.ADMIN_MODE_UPDATE";
 
     public static final String[] OK_APPS = {"com.android.vending","com.google.android.gms","com.android.deskclock","com.google.android.apps.maps","com.android.settings","com.google.android.calendar"};
 }

@@ -7,17 +7,21 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
     // Database Info
     private static final String DATABASE_NAME = "postsDatabase";
-    private static final int DATABASE_VERSION = 11;
+    private static final int DATABASE_VERSION = 12;
 
     // Table Names
     private static final String TABLE_APPS = "apps";
     private static final String TABLE_APP_INFO = "appInfo";
+    private static final String TABLE_TIMER = "appTimer";
 
     // Apps Table Columns
     private static final String KEY_APP_PACKAGE = "appPackage";
@@ -27,6 +31,11 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String PASSWORD_COLUMN = "password";
     private static final String ADMIN_EMAIL_COLUMN = "adminEmail";
     private static final String DEVICE_NAME_COLUMN = "deviceName";
+    private static final String ADMIN_SCREENTIMEOUT = "screenTimeout";
+    private static final String ADMIN_USE_TIMEOUT = "useTimeout";
+    private static final String TIMER_TIME = "totalTime";
+    private static final String TIMER_USER = "timerUser";
+    private static final String TIMER_DATE = "timerDate";
 
     private static DatabaseHandler sInstance;
 
@@ -74,6 +83,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 PASSWORD_COLUMN + " TEXT," +
                 DEVICE_NAME_COLUMN + " TEXT," +
                 ADMIN_EMAIL_COLUMN + " TEXT" +
+                ADMIN_SCREENTIMEOUT + " INTEGER" +
+                ADMIN_USE_TIMEOUT + " TEXT" +
                 ")";
 
         try {
@@ -81,6 +92,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         } catch (Exception e) {
             Log.d("db", e.toString());
         }
+
+        createTimerTable(db);
     }
 
     // Called when the database needs to be upgraded.
@@ -91,9 +104,12 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         if (oldVersion != newVersion) {
             List<AppDetail> apps = getAllApps(db);
             AppInfo appInfo = getAppInfo(db);
+            AppTimer appTimer = getTimer(db, AppConstants.DEFAULT_USER);
+
             // Simplest implementation is to drop all old tables and recreate them
             db.execSQL("DROP TABLE IF EXISTS " + TABLE_APPS);
             db.execSQL("DROP TABLE IF EXISTS " + TABLE_APP_INFO);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_TIMER);
             onCreate(db);
 
             for(int x = 0; x < apps.size(); x++) {
@@ -101,7 +117,19 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             }
 
             updateAppInfo(appInfo, db);
+            saveTimer(db, appTimer);
         }
+    }
+
+    private void createTimerTable(SQLiteDatabase db) {
+        String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_TIMER +
+                "(" +
+                TIMER_USER + " TEXT PRIMARY KEY," +
+                TIMER_DATE + " TEXT," +
+                TIMER_TIME + " TEXT" +
+                ")";
+
+        db.execSQL(CREATE_USERS_TABLE);
     }
 
     public long addorUpdateApp(AppDetail app) {
@@ -185,6 +213,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             values.put(PASSWORD_COLUMN, appInfo.password);
             values.put(ADMIN_EMAIL_COLUMN, appInfo.adminEmail);
             values.put(DEVICE_NAME_COLUMN, appInfo.deviceName);
+            if (appInfo.useTimout) values.put(ADMIN_USE_TIMEOUT, AppConstants.TRUE);
+            else values.put(ADMIN_USE_TIMEOUT, AppConstants.FALSE);
+            values.put(ADMIN_SCREENTIMEOUT, AppConstants.DEFAULT_SCREEN_TIMEOUT);
 
             // First try to update the user in case the user already exists in the database
             // This assumes userNames are unique
@@ -215,6 +246,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         result.password = AppConstants.EMPTY_STRING;
         result.adminEmail = AppConstants.EMPTY_STRING;
         result.deviceName = AppConstants.EMPTY_STRING;
+        result.lastUser = AppConstants.DEFAULT_USER;
+        result.totalTime = AppConstants.DEFAULT_SCREEN_TIMEOUT;
+        result.useTimout = false;
 
         String POSTS_SELECT_QUERY = String.format("SELECT * FROM %s", TABLE_APP_INFO);
         try {
@@ -235,6 +269,15 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                         col = cursor.getColumnIndex(DEVICE_NAME_COLUMN);
                         if (col > -1)
                             result.deviceName = cursor.getString(col);
+                        col = cursor.getColumnIndex(ADMIN_SCREENTIMEOUT);
+                        if (col > -1)
+                            result.totalTime = cursor.getInt(col);
+                        col = cursor.getColumnIndex(ADMIN_USE_TIMEOUT);
+                        if (col > -1) {
+                            String s = cursor.getString(col);
+                            if (s.equals(AppConstants.TRUE))
+                                result.useTimout = true;
+                        }
                     } while (cursor.moveToNext());
                 }
             } catch (Exception e) {
@@ -269,5 +312,80 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             }
         }
         return result;
+    }
+
+    public AppTimer getTimer(SQLiteDatabase db, String user) {
+        AppTimer result = new AppTimer();
+        result._totalTime = AppConstants.DEFAULT_SCREEN_TIMEOUT;
+        result._time = 0;
+        result._userId = user;
+        Calendar calendar = Calendar.getInstance();
+        Date date = calendar.getTime();
+        result._date = DateFormat.getDateInstance(DateFormat.MEDIUM).format(date);
+        String POSTS_SELECT_QUERY = String.format("SELECT * FROM %s WHERE %s = '%s'", TABLE_TIMER, TIMER_USER, user);
+        try {
+            Cursor cursor = db.rawQuery(POSTS_SELECT_QUERY, null);
+            try {
+                if (cursor.moveToFirst()) {
+                    int col = cursor.getColumnIndex(TIMER_DATE);
+                    if (col > -1) {
+                        String d = cursor.getString(col);
+                        if (d.equals(result._date)) {
+                            col = cursor.getColumnIndex(TIMER_TIME);
+                            if (col > -1)
+                                result._time = cursor.getInt(col);
+                        }
+                    }
+                    col = cursor.getColumnIndex(TIMER_USER);
+                    if (col > -1)
+                        result._userId = cursor.getString(col);
+                }
+            } catch (Exception e) {
+                Log.d("test", e.toString());
+            } finally {
+                if (cursor != null && !cursor.isClosed()) {
+                    cursor.close();
+                }
+            }
+        } catch (Exception e) {
+            Log.d("test", e.toString());
+        }
+
+        return result;
+    }
+
+    public AppTimer getTimer(String user) {
+        return getTimer(getReadableDatabase(), user);
+    }
+
+    public boolean saveTimer(AppTimer appTimer) {
+        return saveTimer(getReadableDatabase(), appTimer);
+    }
+
+    public boolean saveTimer(SQLiteDatabase db, AppTimer appTimer) {
+        db.beginTransaction();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(TIMER_USER, appTimer._userId);
+            values.put(TIMER_DATE, appTimer._date);
+            values.put(TIMER_TIME, appTimer._time);
+
+            // First try to update the user in case the user already exists in the database
+            // This assumes userNames are unique
+            //int rows = db.update(TABLE_APP_INFO, values, null, null);
+            try {
+                db.execSQL("DELETE FROM " + TABLE_TIMER + " WHERE " + TIMER_USER + " = '" + appTimer._userId + "'");
+            } catch (Exception ue) {
+                Log.d("db", ue.toString());
+            }
+            db.insertOrThrow(TABLE_TIMER, null, values);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d("test", e.toString());
+        } finally {
+            db.endTransaction();
+        }
+
+        return true;
     }
 }

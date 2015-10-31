@@ -74,6 +74,7 @@ public class SettingsActivity extends Activity {
 
         Intent i = new Intent(AppConstants.APP_PAUSE_UPDATE_RECEIVER);
         i.putExtra("pause", true);
+        i.putExtra(AppConstants.ADMIN_MODE, true);
         sendBroadcast(i);
     }
 
@@ -206,22 +207,20 @@ public class SettingsActivity extends Activity {
             @Override
             public boolean onItemLongClick(AdapterView<?> parentView, View childView, int position, long id) {
                 AppDetail app = apps.get(position).copy();
-                boolean add = false;
+
                 if (app.added) {
-                    add = true;
                     db.deleteApp(app.name);
                     app.type = AppConstants.SKIPPED_APP_TYPE;
                     db.addorUpdateApp(app);
                     apps.get(position).added = false;
                 } else {
-                    add = true;
                     app.type = AppConstants.BLOCKED_APP_TYPE;
                     db.addorUpdateApp(app);
                 }
 
                 loadListView(list.getFirstVisiblePosition());
                 Intent i = new Intent(AppConstants.APP_BLOCK_LIST_UPDATE_RECEIVER);
-                i.putExtra("add", add);
+                i.putExtra("add", AppConstants.TRUE);
                 i.putExtra("pName", app.name);
                 sendBroadcast(i);
                 return true;
@@ -340,6 +339,7 @@ public class SettingsActivity extends Activity {
         setResult(RESULT_OK, intent);
         Intent i = new Intent(AppConstants.APP_PAUSE_UPDATE_RECEIVER);
         i.putExtra("pause", false);
+        i.putExtra(AppConstants.ADMIN_MODE, false);
         sendBroadcast(i);
         finish();
     }

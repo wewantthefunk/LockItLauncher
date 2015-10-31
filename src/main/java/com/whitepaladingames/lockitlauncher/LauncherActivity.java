@@ -53,8 +53,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     private BatteryBroadcastReceiver _batteryReceiver = new BatteryBroadcastReceiver() {
     };
 
-    private TimeBroadcastReceiver _timeReceiver = new TimeBroadcastReceiver() {
-    };
+    private TimeBroadcastReceiver _timeReceiver;
 
     private AppInfoUpdateReceiver _appInfoReceiver = new AppInfoUpdateReceiver() {
         @Override
@@ -68,14 +67,19 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launcher);
+
         _passwordHint = AppConstants.DEFAULT_PWD_HINT;
         _password = new StringBuilder(AppConstants.DEFAULT_PWD_HINT).reverse().toString();
 
         // get basic app info
         DatabaseHandler db = DatabaseHandler.getInstance(this);
+
         AppInfo appInfo = db.getAppInfo();
         _adminEmail = appInfo.adminEmail;
         _deviceName = appInfo.deviceName;
+
+        AppTimer appTimer = db.getTimer(appInfo.lastUser);
+        appTimer._totalTime = appInfo.totalTime;
 
         File sdcard = Environment.getExternalStorageDirectory();
 
@@ -131,7 +135,10 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         this.registerReceiver(this._batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
         //time and date
+        _timeReceiver = new TimeBroadcastReceiver(this, _password, _adminEmail, _deviceName) {
+        };
         _timeReceiver.setTextView((TextView) findViewById(R.id.currentTime));
+        _timeReceiver.setTimerInfo(appTimer);
         this.registerReceiver(this._timeReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
         //run the timer for the first time
         _timeReceiver.onReceive(this, getIntent());
