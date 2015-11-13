@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -18,13 +19,17 @@ public class TimeBroadcastReceiver extends UIBroadcastReceiver implements IAppIn
     private String _password;
     private String _adminEmail;
     private String _deviceName;
+    private boolean _useTimeout;
+    private ArrayList<LockItInAppPurchase> _availablePurchases;
 
-    public TimeBroadcastReceiver(Context context, String password, String adminEmail, String deviceName) {
+    public TimeBroadcastReceiver(Context context, String password, String adminEmail, String deviceName, boolean useTimeout, ArrayList<LockItInAppPurchase> availablePurchases) {
         super();
+        _availablePurchases = availablePurchases;
         _context = context;
         _password = password;
         _adminEmail = adminEmail;
         _deviceName = deviceName;
+        _useTimeout = useTimeout;
         AppInfoUpdateReceiver _appInfoReceiver = new AppInfoUpdateReceiver(this) {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -35,6 +40,13 @@ public class TimeBroadcastReceiver extends UIBroadcastReceiver implements IAppIn
             }
         };
         _context.registerReceiver(_appInfoReceiver, new IntentFilter(AppConstants.APP_PAUSE_UPDATE_RECEIVER));
+        AppInfoUpdateReceiver _appTimeoutReceiver = new AppInfoUpdateReceiver(this) {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                _useTimeout = intent.getBooleanExtra(AppConstants.IN_APP_PURCHASE_GOLD_LEVEL, false);
+            }
+        };
+        _context.registerReceiver(_appTimeoutReceiver, new IntentFilter(AppConstants.PURCHASED_GOLD_LEVEL));
     }
 
     public void setTimerInfo(AppTimer appTimer) {
@@ -44,15 +56,14 @@ public class TimeBroadcastReceiver extends UIBroadcastReceiver implements IAppIn
     public void fire(Context context, Intent intent) {
         DatabaseHandler db = DatabaseHandler.getInstance(context);
         db.saveTimer(_appTimer);
-        if (_appTimer._time >= _appTimer._totalTime && !_shown && !_admin) {
+        if (_useTimeout && _appTimer._time >= _appTimer._totalTime && !_shown && !_admin) {
             _shown = true;
-            Bundle bundle = new Bundle();
 
             Intent panel = new Intent(context, TimerUpActivity.class);
-            bundle.putString(AppConstants.PASSWORD_EXTRA, _password);
-            bundle.putString(AppConstants.ADMIN_EMAIL, _adminEmail);
-            bundle.putString(AppConstants.DEVICE_NAME, _deviceName);
-            panel.replaceExtras(bundle);
+            panel.putExtra(AppConstants.PASSWORD_EXTRA, _password);
+            panel.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
+            panel.putExtra(AppConstants.DEVICE_NAME, _deviceName);
+            panel.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
             panel.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_HISTORY);
             try {
                 context.startActivity(panel);

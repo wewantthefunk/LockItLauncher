@@ -38,6 +38,10 @@ public class SettingsActivity extends Activity {
     private String _password;
     private String _adminEmail;
     private String _deviceName;
+    private ArrayList<LockItInAppPurchase> _availablePurchases;
+    private ListView list;
+    private PackageManager manager;
+    private List<AppDetail> apps;
 
     private static final String TAG = "LockIt";
 
@@ -59,6 +63,8 @@ public class SettingsActivity extends Activity {
         _password = getIntent().getStringExtra(AppConstants.PASSWORD_EXTRA);
         _adminEmail = getIntent().getStringExtra(AppConstants.ADMIN_EMAIL);
         _deviceName = getIntent().getStringExtra(AppConstants.DEVICE_NAME);
+        InAppPurchaseDataWrapper dw = (InAppPurchaseDataWrapper)getIntent().getSerializableExtra(AppConstants.IN_APP_PURCHASE_DATA);
+        _availablePurchases = dw.getLockItInAppPurchases();
 
         ((EditText) findViewById(R.id.passwordText)).setText(_password);
         if (!checkTelephony()) {
@@ -81,9 +87,6 @@ public class SettingsActivity extends Activity {
     private boolean checkTelephony() {
         return manager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
     }
-
-    private PackageManager manager;
-    private List<AppDetail> apps;
 
     private void loadApps() {
         apps = new ArrayList<>();
@@ -137,8 +140,6 @@ public class SettingsActivity extends Activity {
         return null;
     }
 
-    private ListView list;
-
     private void loadListView(int position) {
         list = (ListView) findViewById(R.id.apps_list);
 
@@ -146,8 +147,7 @@ public class SettingsActivity extends Activity {
         final List<AppDetail> savedApps = db.getAllApps();
 
         ArrayAdapter<AppDetail> adapter = new ArrayAdapter<AppDetail>(this,
-                R.layout.list_item,
-                apps) {
+                R.layout.list_item, apps) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 if (convertView == null) {
@@ -170,10 +170,12 @@ public class SettingsActivity extends Activity {
                     AppDetail sa = getApp(apps.get(position).name, savedApps);
                     if (sa != null && sa.type.equals(AppConstants.BLOCKED_APP_TYPE)) {
                         appLabel.setText(apps.get(position).label + AppConstants.BLOCKED_APP);
+                        apps.get(position).added = true;
                     } else if (sa != null && sa.type.equals(AppConstants.APP_APP_TYPE)) {
                         appLabel.setText(apps.get(position).label + AppConstants.ADDED_APP);
+                        apps.get(position).added = true;
                     }
-                    apps.get(position).added = true;
+
                 }
 
                 return convertView;
@@ -238,6 +240,7 @@ public class SettingsActivity extends Activity {
         i.putExtra(AppConstants.PASSWORD_EXTRA, _password);
         i.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
         i.putExtra(AppConstants.DEVICE_NAME, _deviceName);
+        i.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
         startActivityForResult(i, AppConstants.MAIN_INTENT_CODE);
     }
 

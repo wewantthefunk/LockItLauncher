@@ -1,11 +1,12 @@
 package com.whitepaladingames.lockitlauncher;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
@@ -15,6 +16,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +28,10 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.android.vending.billing.IInAppBillingService;
+
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -47,6 +54,10 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     private ListView list;
     private String _adminEmail;
     private String _deviceName;
+    private boolean _useTimeout;
+    private ArrayList<LockItInAppPurchase> _availablePurchases;
+    private Bundle UPGRADE_LIST_BUNDLE;
+    private ArrayList<String> UPGRADE_ITEM_LIST;
 
     private static String TAG = "LockIt";
 
@@ -63,11 +74,112 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         }
     };
 
+    IInAppBillingService _service;
+
+    ServiceConnection _serviceConn;
+
+    Thread _playServicesThread;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launcher);
 
+        final Context context = this;
+        final IAlertBoxCaller caller = this;
+
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                _serviceConn = new ServiceConnection() {
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {
+                        _service = null;
+                    }
+
+                    @Override
+                    public void onServiceConnected(ComponentName name,
+                                                   IBinder service) {
+                        _service = IInAppBillingService.Stub.asInterface(service);
+                        try {
+                            UPGRADE_ITEM_LIST = new ArrayList<>();
+                            UPGRADE_ITEM_LIST.add(AppConstants.IN_APP_PURCHASE_GOLD_LEVEL);
+                            UPGRADE_LIST_BUNDLE = new Bundle();
+                            UPGRADE_LIST_BUNDLE.putStringArrayList(AppConstants.GOOGLE_PLAY_BILLING_ITEM_ID_LIST, UPGRADE_ITEM_LIST);
+                            Bundle inAppPurchase = _service.getSkuDetails(AppConstants.GOOGLE_PLAY_API_VERSION, getPackageName(), AppConstants.GOOGLE_PLAY_IN_APP_TYPE, UPGRADE_LIST_BUNDLE);
+
+                            int response = inAppPurchase.getInt(AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_CODE);
+                            if (response == AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_OK) {
+                                ArrayList<String> responseList  = inAppPurchase.getStringArrayList("DETAILS_LIST");
+
+                                for (String thisResponse : responseList) {
+                                    JSONObject object = new JSONObject(thisResponse);
+                                    LockItInAppPurchase purchase = new LockItInAppPurchase();
+                                    purchase.currency = object.getString("price_currency_code");
+                                    purchase.productId = object.getString("productId");
+                                    purchase.price = object.getString("price");
+                                    purchase.name = object.getString("title").replace("(LockIt Launcher)", AppConstants.EMPTY_STRING);
+                                    purchase.description = object.getString("description");
+                                    purchase.type = object.getString("type");
+                                    _availablePurchases.add(purchase);
+                                }
+                            }
+
+                            String continuationToken = AppConstants.EMPTY_STRING;
+                            int length = _availablePurchases.size();
+
+                            while (continuationToken != null) {
+                                Bundle ownedItems = _service.getPurchases(AppConstants.GOOGLE_PLAY_API_VERSION, getPackageName(), AppConstants.GOOGLE_PLAY_IN_APP_TYPE, null);
+
+                                response = ownedItems.getInt(AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_CODE);
+                                if (response == AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_OK) {
+                                    ArrayList<String> ownedSkus = ownedItems.getStringArrayList("INAPP_PURCHASE_ITEM_LIST");
+                                    ArrayList<String> purchaseDataList = ownedItems.getStringArrayList("INAPP_PURCHASE_DATA_LIST");
+                                    ArrayList<String> signatureList = ownedItems.getStringArrayList("INAPP_DATA_SIGNATURE_LIST");
+                                    continuationToken = ownedItems.getString("INAPP_CONTINUATION_TOKEN");
+
+                                    for (int i = 0; i < purchaseDataList.size(); ++i) {
+                                        //String purchaseData = purchaseDataList.get(i);
+                                        //String signature = signatureList.get(i);
+                                        String sku = ownedSkus.get(i);
+
+                                        for (int y = 0; y < length; y++) {
+                                            if (_availablePurchases.get(y).productId.equals(sku)) {
+                                                _availablePurchases.get(y).purchased = 1;
+                                                y = length +  1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (BuildConfig.DEBUG) {
+                                for (int y = 0; y < length; y++) {
+                                    _availablePurchases.get(y).purchased = 1;
+                                }
+                            }
+                        } catch (RemoteException ex) {
+                            AlertBox.ShowAlert(context, "Unable to reach Google Play Store", "We are unable to reach the Google Play Store to verify your In-App purchases.\nSorry for the inconvenience.", caller);
+                        } catch (Exception e) {
+                            Log.d(TAG, e.toString());
+                        }
+                    }
+                };
+
+                Intent serviceIntent = new Intent(AppConstants.GOOGLE_PLAY_SERVICES_INTENT_ACTION);
+                serviceIntent.setPackage(AppConstants.GOOGLE_PLAY_SERVICES_PACKAGE);
+                bindService(serviceIntent, _serviceConn, Context.BIND_AUTO_CREATE);
+            }
+        };
+
+        _availablePurchases = new ArrayList<>();
+        _playServicesThread = new Thread(runnable);
+        _playServicesThread.start();
+
+        finishInitializing();
+    }
+
+    private void finishInitializing() {
         _passwordHint = AppConstants.DEFAULT_PWD_HINT;
         _password = new StringBuilder(AppConstants.DEFAULT_PWD_HINT).reverse().toString();
 
@@ -77,6 +189,11 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         AppInfo appInfo = db.getAppInfo();
         _adminEmail = appInfo.adminEmail;
         _deviceName = appInfo.deviceName;
+        _useTimeout = appInfo.useTimout;
+
+        if (BuildConfig.DEBUG) {
+            _useTimeout = true;
+        }
 
         AppTimer appTimer = db.getTimer(appInfo.lastUser);
         appTimer._totalTime = appInfo.totalTime;
@@ -135,7 +252,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         this.registerReceiver(this._batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
         //time and date
-        _timeReceiver = new TimeBroadcastReceiver(this, _password, _adminEmail, _deviceName) {
+        _timeReceiver = new TimeBroadcastReceiver(this, _password, _adminEmail, _deviceName, _useTimeout, _availablePurchases) {
         };
         _timeReceiver.setTextView((TextView) findViewById(R.id.currentTime));
         _timeReceiver.setTimerInfo(appTimer);
@@ -446,7 +563,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
                 Intent i = new Intent(context, SettingsActivity.class);
                 i.putExtra(AppConstants.PASSWORD_EXTRA, _password);
                 i.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
-                i.putExtra(AppConstants.DEVICE_NAME, _deviceName);
+                i.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
                 startActivityForResult(i, AppConstants.MAIN_INTENT_CODE);
             } else {
                 _isHomeUnlocked = true;
@@ -469,4 +586,11 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (_service != null) {
+            unbindService(_serviceConn);
+        }
+    }
 }

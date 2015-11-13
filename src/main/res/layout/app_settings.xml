@@ -70,4 +70,26 @@
             android:id="@+id/saveAppSettings"
             android:onClick="saveAppSettings"/>
     </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="#444444">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:text="In-App Purchases"
+            android:id="@+id/inapplabel"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"/>
+        <ListView
+            android:id="@+id/inapppurchase_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#555555"
+            android:layout_below="@id/inapplabel"
+            >
+        </ListView>
+    </RelativeLayout>
 </LinearLayout>

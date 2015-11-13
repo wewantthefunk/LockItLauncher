@@ -154,14 +154,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
             // First try to update the user in case the user already exists in the database
             // This assumes userNames are unique
-            int rows = db.update(TABLE_APPS, values, KEY_APP_PACKAGE + "= ? AND " + KEY_APP_TYPE + " = ?", new String[]{detail.name, detail.type});
-
-            // Check if update succeeded
-            if (rows != 1) {
-                // user with this userName did not already exist, so insert new user
-                userId = db.insertOrThrow(TABLE_APPS, null, values);
-                db.setTransactionSuccessful();
-            }
+            deleteApp(detail.name);
+            // user with this userName did not already exist, so insert new user
+            userId = db.insertOrThrow(TABLE_APPS, null, values);
+            db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.d("test", e.toString());
         } finally {
@@ -276,7 +272,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                         if (col > -1) {
                             String s = cursor.getString(col);
                             if (s.equals(AppConstants.TRUE))
-                                result.useTimout = true;
+                                result.useTimout = false;
                         }
                     } while (cursor.moveToNext());
                 }

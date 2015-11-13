@@ -1,5 +1,9 @@
 package com.whitepaladingames.lockitlauncher;
 
+import android.os.Bundle;
+
+import java.util.ArrayList;
+
 public class AppConstants {
     public static final String DEFAULT_PWD_HINT = "12345";
     public static final String EMPTY_STRING = "";
@@ -18,6 +22,7 @@ public class AppConstants {
     public static final String SETTINGS_PACKAGE = "com.android.settings";
     public static final String PLAY_STORE_PACKAGE = "com.android.vending";
     public static final String HIDDEN_TEXT_COLOR = "#555555";
+    public static final String WHITE_TEXT_COLOR = "#FFFFFF";
     public static final String ADDED_APP = " (APPROVED)";
     public static final String BLOCKED_APP = " (BLOCKED)";
     public static final int POST_PHONE_CALL_WAIT = 5000;
@@ -37,6 +42,8 @@ public class AppConstants {
     public static final String SMS_APP_TYPE = "sms";
     public static final String APP_DRAWER_NAME = "LockItAppDrawer";
     public static final String APP_DRAWER_ICON = "mipmap/appdrawer2";
+    public static final String MONEY_ICON = "mipmap/money";
+    public static final String CHECK_MARK_ICON = "mipmap/checkmark";
     public static final String DRAWABLE_RESOURCE = "drawable";
     public static final String BLOCKED_APP_TYPE = "blk";
     public static final String APP_RECEIVER = "com.whitepaladingames.lockitlauncher.CLEARED_LIST_UPDATE";
@@ -61,6 +68,23 @@ public class AppConstants {
     public static final String FALSE = "false";
     public static final String ADMIN_MODE = "adminMode";
     public static final String ADMIN_MODE_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.ADMIN_MODE_UPDATE";
+    public static final String GOOGLE_PLAY_SERVICES_INTENT_ACTION = "com.android.vending.billing.InAppBillingService.BIND";
+    public static final String GOOGLE_PLAY_SERVICES_PACKAGE = "com.android.vending";
+    public static final String GOOGLE_PLAY_BILLING_ITEM_ID_LIST = "ITEM_ID_LIST";
+    public static final int GOOGLE_PLAY_BILLING_RESPONSE_OK = 0;
+    public static final String GOOGLE_PLAY_BILLING_RESPONSE_CODE = "RESPONSE_CODE";
+    public static final int GOOGLE_PLAY_API_VERSION = 3;
+    public static final String GOOGLE_PLAY_IN_APP_TYPE = "inapp";
+    public static final String IN_APP_PURCHASE_DATA = "inAppPurchaseInfo";
+    public static final int GOOGLE_PLAY_ACTIVITY_CODE = 1231;
+    public static final int IN_APP_PURCHASE_ICON_SIZE = 28;
+    public static final int INT_FALSE = 0;
+    public static final String IN_APP_PURCHASE_GOLD_LEVEL = "gold_level_features";
+    public static final String PURCHASED_GOLD_LEVEL = "com.whitepaladingames.lockitlauncher.PURCHASE_GOLD";
 
     public static final String[] OK_APPS = {"com.android.vending","com.google.android.gms","com.android.deskclock","com.google.android.apps.maps","com.android.settings","com.google.android.calendar"};
+
+    public AppConstants() {
+
+    }
 }
