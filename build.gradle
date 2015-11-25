@@ -15,8 +15,8 @@ android {
         applicationId "com.whitepaladingames.lockitlauncher"
         minSdkVersion 15
         targetSdkVersion 21
-        versionCode 12
-        versionName "2.01"
+        versionCode 13
+        versionName "2.10"
     }
     buildTypes {
         release {

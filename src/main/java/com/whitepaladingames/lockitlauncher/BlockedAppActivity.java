@@ -59,6 +59,8 @@ public class BlockedAppActivity extends Activity {
             ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
             am.killBackgroundProcesses(name);
         }
+        Intent i = new Intent(AppConstants.BLOCKED_APP_SHOWN_RECEIVER);
+        sendBroadcast(i);
     }
 
     public void cancelButton(View v) {

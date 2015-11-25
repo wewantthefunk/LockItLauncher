@@ -2,6 +2,7 @@ package com.whitepaladingames.lockitlauncher;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -42,6 +43,7 @@ public class SettingsActivity extends Activity {
     private ListView list;
     private PackageManager manager;
     private List<AppDetail> apps;
+    private boolean _useTimeout;
 
     private static final String TAG = "LockIt";
 
@@ -50,6 +52,13 @@ public class SettingsActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             _adminEmail = intent.getStringExtra(AppConstants.ADMIN_EMAIL);
             _deviceName = intent.getStringExtra(AppConstants.DEVICE_NAME);
+        }
+    };
+
+    private BroadcastReceiver _timerToggleReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            _useTimeout = intent.getBooleanExtra(AppConstants.USE_SCREEN_TIMEOUT, false);
         }
     };
 
@@ -63,6 +72,7 @@ public class SettingsActivity extends Activity {
         _password = getIntent().getStringExtra(AppConstants.PASSWORD_EXTRA);
         _adminEmail = getIntent().getStringExtra(AppConstants.ADMIN_EMAIL);
         _deviceName = getIntent().getStringExtra(AppConstants.DEVICE_NAME);
+        _useTimeout = getIntent().getBooleanExtra(AppConstants.USE_SCREEN_TIMEOUT, false);
         InAppPurchaseDataWrapper dw = (InAppPurchaseDataWrapper)getIntent().getSerializableExtra(AppConstants.IN_APP_PURCHASE_DATA);
         _availablePurchases = dw.getLockItInAppPurchases();
 
@@ -77,6 +87,8 @@ public class SettingsActivity extends Activity {
 
         //callback from app info update
         this.registerReceiver(this._appInfoReceiver, new IntentFilter(AppConstants.APP_INFO_UPDATE_RECEIVER));
+
+        this.registerReceiver(this._timerToggleReceiver, new IntentFilter(AppConstants.TIMER_TOGGLE_RECEIVER));
 
         Intent i = new Intent(AppConstants.APP_PAUSE_UPDATE_RECEIVER);
         i.putExtra("pause", true);
@@ -240,6 +252,7 @@ public class SettingsActivity extends Activity {
         i.putExtra(AppConstants.PASSWORD_EXTRA, _password);
         i.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
         i.putExtra(AppConstants.DEVICE_NAME, _deviceName);
+        i.putExtra(AppConstants.USE_SCREEN_TIMEOUT, _useTimeout);
         i.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
         startActivityForResult(i, AppConstants.MAIN_INTENT_CODE);
     }

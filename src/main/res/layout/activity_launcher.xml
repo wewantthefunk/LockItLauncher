@@ -55,6 +55,16 @@
             android:layout_marginTop="10dp"
             android:layout_toRightOf="@id/batteryLevel" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/batteryCharge"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="3dp"
+            android:id="@+id/totalTimeView"
+            android:onClick="timerClick"
+            android:clickable="true"/>
+
         <View
             android:layout_width="fill_parent"
             android:layout_height="1dp"
@@ -72,6 +82,25 @@
             android:id="@+id/main_apps_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#555555"></ListView>
+            android:background="#555555"
+            ></ListView>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#000000"
+        android:layout_alignParentBottom="true"
+        android:visibility="invisible"
+        android:id="@+id/main_extra_actions">
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:background="@mipmap/wallpaper"
+            android:id="@+id/wallpaperButton"
+            android:onClick="setWallpaper"
+            />
     </RelativeLayout>
 </RelativeLayout>

@@ -8,4 +8,5 @@ public class AppInfo {
     String lastUser;
     int totalTime;
     boolean useTimout;
+    String wallpaper;
 }

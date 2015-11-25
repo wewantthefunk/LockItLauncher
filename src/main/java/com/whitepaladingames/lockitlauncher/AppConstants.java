@@ -1,8 +1,9 @@
 package com.whitepaladingames.lockitlauncher;
 
-import android.os.Bundle;
-
-import java.util.ArrayList;
+import android.app.Activity;
+import android.content.Context;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 
 public class AppConstants {
     public static final String DEFAULT_PWD_HINT = "12345";
@@ -50,6 +51,8 @@ public class AppConstants {
     public static final String APP_BLOCK_LIST_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.BLOCKED_LIST_UPDATE";
     public static final String APP_PAUSE_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.PAUSE_UPDATE";
     public static final String APP_INFO_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.APP_INFO_UPDATE";
+    public static final String BLOCKED_APP_SHOWN_RECEIVER = "com.whitepaladingames.lockitlauncher.BLOCKED_APP_SHOWN";
+    public static final String IN_APP_PURCHASES_DONE_RECEIVER = "com.whitepaladingames.lockitlauncher.IN_APP_PURCHASES_DONE";
     public static final String IS_ADMIN_MODE = "isAdmin";
     public static final String ADMIN_EMAIL = "adminEmail";
     public static final String BLOCKED_APPS_LIST = "blockedApps";
@@ -61,13 +64,15 @@ public class AppConstants {
     public static final String PACKAGE_NAME = "pName";
     public static final String APP_NAME = "aName";
     public static final String DEVICE_NAME = "dName";
+    public static final String PAUSE_APP_CHECK = "pause";
     public static final String SKIPPED_APP_TYPE = "skp";
     public static final int DEFAULT_SCREEN_TIMEOUT = 60;
+    public static final String SCREEN_TIMEOUT_TIME = "screenTimeoutTime";
     public static final String DEFAULT_USER = "default";
     public static final String TRUE = "true";
     public static final String FALSE = "false";
     public static final String ADMIN_MODE = "adminMode";
-    public static final String ADMIN_MODE_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.ADMIN_MODE_UPDATE";
+    //public static final String ADMIN_MODE_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.ADMIN_MODE_UPDATE";
     public static final String GOOGLE_PLAY_SERVICES_INTENT_ACTION = "com.android.vending.billing.InAppBillingService.BIND";
     public static final String GOOGLE_PLAY_SERVICES_PACKAGE = "com.android.vending";
     public static final String GOOGLE_PLAY_BILLING_ITEM_ID_LIST = "ITEM_ID_LIST";
@@ -81,10 +86,34 @@ public class AppConstants {
     public static final int INT_FALSE = 0;
     public static final String IN_APP_PURCHASE_GOLD_LEVEL = "gold_level_features";
     public static final String PURCHASED_GOLD_LEVEL = "com.whitepaladingames.lockitlauncher.PURCHASE_GOLD";
+    public static final String USE_SCREEN_TIMEOUT = "useScreenTimeout";
+    public static final String PAUSE_SCREEN_TIMEOUT = "pauseScreenTimeout";
+    public static final String TIMER_TOGGLE_RECEIVER = "com.whitepaladingames.lockitlauncher.TIMER_TOGGLE";
+    public static final String TIME = "currentTime";
+    public static final String TOTAL_TIME = "totalTime";
+    public static final String TIMER_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.TIMER_UPDATE";
+    public static final String TIMER_TIME_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.TIMER_TIME_UPDATE";
+    public static final String TIMER_CURRENT_TIME_UPDATE_RECEIVER = "com.whitepaladingames.lockitlauncher.TIMER_CURRENT_TIME_UDPATE";
+    public static final String TIME_OUT_ACTIVITY_READY_RECEIVER = "com.whitepaladingames.lockitlauncher.TIME_OUT_ACTIVITY_READY";
+    public static final String TIMER_PAUSED_MESSAGE = "Timer Paused";
+    public static final String TIMER_FIRE_CAME_FROM = "cameFrom";
+    public static final int SELECT_PICTURE_ACTIVITY_CODE = 1232;
+    public static final String SELECT_PICTURE_STRING = "Select Background";
+    public static final String IMAGE_SELECTION_LIST_ALL = "image/*";
 
     public static final String[] OK_APPS = {"com.android.vending","com.google.android.gms","com.android.deskclock","com.google.android.apps.maps","com.android.settings","com.google.android.calendar"};
 
+    //"wewantthefunk73@gmail.com",
+    public static final String[] DEBUG_EMAILS = {"wewantthefunk73@gmail.com", "marcsantini@gmail.com"};
     public AppConstants() {
 
+    }
+
+    public static void HideKeyboard(Context context, Activity activity) {
+        View view = activity.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 }

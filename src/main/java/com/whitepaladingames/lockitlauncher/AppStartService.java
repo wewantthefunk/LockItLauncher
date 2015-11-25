@@ -16,7 +16,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class AppStartService extends Service {
-    private Timer _appStartTimer;
     private ArrayList<String> _blockedApps;
     private final String TAG = "LockIt";
     private ArrayList<String> _running;
@@ -54,7 +53,7 @@ public class AppStartService extends Service {
         class ReceivePauseUpdate extends BroadcastReceiver {
             @Override
             public void onReceive(Context context, Intent intent) {
-                _pause = intent.getBooleanExtra("pause", false);
+                _pause = intent.getBooleanExtra(AppConstants.PAUSE_APP_CHECK, false);
             }
         }
         ReceiveMessages receiveMessages = new ReceiveMessages();
@@ -71,7 +70,7 @@ public class AppStartService extends Service {
         _adminEmail = intent.getStringExtra(AppConstants.ADMIN_EMAIL);
         _deviceName = intent.getStringExtra(AppConstants.DEVICE_NAME);
         _pause = false;
-        _appStartTimer = new Timer();
+        Timer _appStartTimer = new Timer();
         _appStartTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -98,7 +97,7 @@ public class AppStartService extends Service {
                                 try {
                                     _context.startActivity(panel);
                                 } catch (Exception e) {
-                                    Log.d("LIC", e.toString());
+                                    Log.d(TAG, e.toString());
                                 }
                             }
                         } else {

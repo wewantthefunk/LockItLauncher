@@ -5,13 +5,32 @@
     android:background="#333333">
     <TextView android:text="Time is up for this device for today." android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
+        android:textSize="20dp"
+        android:layout_marginTop="30dp"
         android:id="@+id/timeUpMessage"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textSize="20dp"
+        android:layout_marginTop="8dp"
+        android:layout_below="@id/timeUpMessage"
+        android:id="@+id/totalTimeMessage"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textSize="20dp"
+        android:layout_marginTop="8dp"
+        android:layout_below="@id/timeUpMessage"
+        android:id="@+id/timerPausedMessage" />
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_below="@id/timerPausedMessage"
+        android:id="@+id/timeUpLayout1">
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,15 +42,73 @@
             android:layout_marginTop="30dp"
             android:inputType="textPassword"
             android:capitalize="none"/>
-        <Button
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
+            android:layout_below="@id/timeUpPassword">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
-            android:layout_below="@id/timeUpPassword"
             android:text="        OK        "
             android:id="@+id/timeUpOK"
             android:onClick="timeUpOK"
         />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="false"
+            android:layout_marginTop="30dp"
+            android:text="      Cancel      "
+            android:id="@+id/timeUpCancel"
+            android:onClick="timeUpCancel"
+            android:layout_toRightOf="@id/timeUpOK"/>
+        </RelativeLayout>
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@id/timeUpLayout1"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:visibility="invisible"
+        android:id="@+id/timeUpLayout2">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/gotoSettings"
+            android:text="Settings"
+            android:onClick="goToSettings"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/addMinutes"
+            android:text="Add 10 Minutes"
+            android:onClick="addTime"
+            android:layout_toRightOf="@id/gotoSettings"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/pauseForNow"
+            android:text="Pause Timer"
+            android:onClick="pauseTimer"
+            android:layout_toRightOf="@id/addMinutes"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/pauseForNow"
+            android:id="@+id/unpauseTimer"
+            android:onClick="unpauseTimer"
+            android:text="Unpause Timer"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/resetTime"
+            android:text="Reset Today's Time to Zero"
+            android:onClick="resetTimer"
+            android:layout_below="@id/pauseForNow"
+            android:layout_toRightOf="@id/unpauseTimer"/>
     </RelativeLayout>
 </RelativeLayout>

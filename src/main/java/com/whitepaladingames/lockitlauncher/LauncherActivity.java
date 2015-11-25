@@ -1,6 +1,10 @@
 package com.whitepaladingames.lockitlauncher;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.KeyguardManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,6 +14,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -17,7 +22,9 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.RemoteException;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +45,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -58,6 +66,9 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     private ArrayList<LockItInAppPurchase> _availablePurchases;
     private Bundle UPGRADE_LIST_BUNDLE;
     private ArrayList<String> UPGRADE_ITEM_LIST;
+    private boolean _timeoutPaused;
+    private String marketAssociatedEmailId;
+    private AppInfo _appInfo;
 
     private static String TAG = "LockIt";
 
@@ -74,6 +85,29 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         }
     };
 
+    private BroadcastReceiver _timerToggleReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            _useTimeout = intent.getBooleanExtra(AppConstants.USE_SCREEN_TIMEOUT, false);
+            _timeoutPaused = intent.getBooleanExtra(AppConstants.PAUSE_SCREEN_TIMEOUT, false);
+        }
+    };
+
+    private BroadcastReceiver _dailyTimerFireReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (_useTimeout || _timeoutPaused) {
+                String time = intent.getStringExtra(AppConstants.TIME);
+                String total = intent.getStringExtra(AppConstants.TOTAL_TIME);
+                String s = AppConstants.EMPTY_STRING;
+                if (!total.equals("1")) s = "s";
+                ((TextView) findViewById(R.id.totalTimeView)).setText(String.format("%s of %s minute%s today", time, total, s));
+            } else {
+                ((TextView) findViewById(R.id.totalTimeView)).setText(AppConstants.EMPTY_STRING);
+            }
+        }
+    };
+
     IInAppBillingService _service;
 
     ServiceConnection _serviceConn;
@@ -85,8 +119,18 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launcher);
 
+        _timeoutPaused = false;
+
         final Context context = this;
         final IAlertBoxCaller caller = this;
+
+        marketAssociatedEmailId = "";
+        Account[] accounts = AccountManager.get(this).getAccountsByType("com.google");
+        if (accounts.length > 0) {
+            marketAssociatedEmailId = accounts[0].name;
+        }
+
+        final String mainEmail = marketAssociatedEmailId;
 
         Runnable runnable = new Runnable() {
             @Override
@@ -110,18 +154,20 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
 
                             int response = inAppPurchase.getInt(AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_CODE);
                             if (response == AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_OK) {
-                                ArrayList<String> responseList  = inAppPurchase.getStringArrayList("DETAILS_LIST");
+                                ArrayList<String> responseList = inAppPurchase.getStringArrayList("DETAILS_LIST");
 
-                                for (String thisResponse : responseList) {
-                                    JSONObject object = new JSONObject(thisResponse);
-                                    LockItInAppPurchase purchase = new LockItInAppPurchase();
-                                    purchase.currency = object.getString("price_currency_code");
-                                    purchase.productId = object.getString("productId");
-                                    purchase.price = object.getString("price");
-                                    purchase.name = object.getString("title").replace("(LockIt Launcher)", AppConstants.EMPTY_STRING);
-                                    purchase.description = object.getString("description");
-                                    purchase.type = object.getString("type");
-                                    _availablePurchases.add(purchase);
+                                if (responseList != null) {
+                                    for (String thisResponse : responseList) {
+                                        JSONObject object = new JSONObject(thisResponse);
+                                        LockItInAppPurchase purchase = new LockItInAppPurchase();
+                                        purchase.currency = object.getString("price_currency_code");
+                                        purchase.productId = object.getString("productId");
+                                        purchase.price = object.getString("price");
+                                        purchase.name = object.getString("title").replace("(LockIt Launcher)", AppConstants.EMPTY_STRING);
+                                        purchase.description = object.getString("description");
+                                        purchase.type = object.getString("type");
+                                        _availablePurchases.add(purchase);
+                                    }
                                 }
                             }
 
@@ -135,29 +181,51 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
                                 if (response == AppConstants.GOOGLE_PLAY_BILLING_RESPONSE_OK) {
                                     ArrayList<String> ownedSkus = ownedItems.getStringArrayList("INAPP_PURCHASE_ITEM_LIST");
                                     ArrayList<String> purchaseDataList = ownedItems.getStringArrayList("INAPP_PURCHASE_DATA_LIST");
-                                    ArrayList<String> signatureList = ownedItems.getStringArrayList("INAPP_DATA_SIGNATURE_LIST");
+                                    //ArrayList<String> signatureList = ownedItems.getStringArrayList("INAPP_DATA_SIGNATURE_LIST");
                                     continuationToken = ownedItems.getString("INAPP_CONTINUATION_TOKEN");
 
-                                    for (int i = 0; i < purchaseDataList.size(); ++i) {
-                                        //String purchaseData = purchaseDataList.get(i);
-                                        //String signature = signatureList.get(i);
-                                        String sku = ownedSkus.get(i);
+                                    if (purchaseDataList != null) {
+                                        for (int i = 0; i < purchaseDataList.size(); ++i) {
+                                            //String purchaseData = purchaseDataList.get(i);
+                                            //String signature = signatureList.get(i);
+                                            String sku = null;
+                                            if (ownedSkus != null) {
+                                                sku = ownedSkus.get(i);
+                                            }
 
-                                        for (int y = 0; y < length; y++) {
-                                            if (_availablePurchases.get(y).productId.equals(sku)) {
-                                                _availablePurchases.get(y).purchased = 1;
-                                                y = length +  1;
+                                            for (int y = 0; y < length; y++) {
+                                                if (_availablePurchases.get(y).productId.equals(sku)) {
+                                                    _availablePurchases.get(y).purchased = 1;
+                                                    if (_availablePurchases.get(y).productId.equals(AppConstants.IN_APP_PURCHASE_GOLD_LEVEL)) {
+                                                        _useTimeout = true;
+                                                        View v = findViewById(R.id.main_apps_list);
+                                                        v.setPadding(0, 0, 0, 50);
+                                                        View v1 = findViewById(R.id.main_extra_actions);
+                                                        v1.setVisibility(View.VISIBLE);
+                                                    }
+                                                    y = length + 1;
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
 
-                            if (BuildConfig.DEBUG) {
+                            if (Arrays.asList(AppConstants.DEBUG_EMAILS).contains(mainEmail)) {
+                                _useTimeout = true;
+                                View v = findViewById(R.id.main_apps_list);
+                                v.setPadding(0, 0, 0, 50);
+                                View v1 = findViewById(R.id.main_extra_actions);
+                                v1.setVisibility(View.VISIBLE);
                                 for (int y = 0; y < length; y++) {
                                     _availablePurchases.get(y).purchased = 1;
                                 }
                             }
+
+                            Intent i = new Intent(AppConstants.IN_APP_PURCHASES_DONE_RECEIVER);
+                            i.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
+                            i.putExtra(AppConstants.USE_SCREEN_TIMEOUT, _useTimeout);
+                            sendBroadcast(i);
                         } catch (RemoteException ex) {
                             AlertBox.ShowAlert(context, "Unable to reach Google Play Store", "We are unable to reach the Google Play Store to verify your In-App purchases.\nSorry for the inconvenience.", caller);
                         } catch (Exception e) {
@@ -179,6 +247,36 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         finishInitializing();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //no apps are running, so stop counting time
+        Intent i = new Intent();
+        i.putExtra(AppConstants.ADMIN_MODE, false);
+        i.putExtra(AppConstants.PAUSE_SCREEN_TIMEOUT, true);
+        _timeReceiver.notShown(this, i);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //switched to an app are running, so start counting time again
+
+        KeyguardManager myKM = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
+        boolean isPhoneLocked = myKM.inKeyguardRestrictedInputMode();
+
+        PowerManager powerManager = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+        boolean isSceenAwake;
+        isSceenAwake = powerManager.isScreenOn();
+
+        Intent i = new Intent();
+        i.putExtra(AppConstants.ADMIN_MODE, false);
+        i.putExtra(AppConstants.PAUSE_SCREEN_TIMEOUT, (isPhoneLocked || !isSceenAwake));
+        _timeReceiver.notShown(this, i);
+    }
+
     private void finishInitializing() {
         _passwordHint = AppConstants.DEFAULT_PWD_HINT;
         _password = new StringBuilder(AppConstants.DEFAULT_PWD_HINT).reverse().toString();
@@ -186,17 +284,22 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         // get basic app info
         DatabaseHandler db = DatabaseHandler.getInstance(this);
 
-        AppInfo appInfo = db.getAppInfo();
-        _adminEmail = appInfo.adminEmail;
-        _deviceName = appInfo.deviceName;
-        _useTimeout = appInfo.useTimout;
+        _appInfo = db.getAppInfo();
+        setViewBackground(_appInfo.wallpaper.replace("~", "/"), findViewById(R.id.main_apps_list));
+        _adminEmail = _appInfo.adminEmail;
+        _deviceName = _appInfo.deviceName;
+        _useTimeout = _appInfo.useTimout;
 
-        if (BuildConfig.DEBUG) {
+        if (Arrays.asList(AppConstants.DEBUG_EMAILS).contains(marketAssociatedEmailId)) {
             _useTimeout = true;
+            View v = findViewById(R.id.main_apps_list);
+            v.setPadding(0, 0, 0, 50);
+            View v1 = findViewById(R.id.main_extra_actions);
+            v1.setVisibility(View.VISIBLE);
         }
 
-        AppTimer appTimer = db.getTimer(appInfo.lastUser);
-        appTimer._totalTime = appInfo.totalTime;
+        AppTimer _appTimer = db.getTimer(_appInfo.lastUser);
+        _appTimer._totalTime = _appInfo.totalTime;
 
         File sdcard = Environment.getExternalStorageDirectory();
 
@@ -228,9 +331,9 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
                     _passwordHint = AppConstants.EMPTY_STRING;
                     _password = text.toString();
                 } else {
-                    if (!appInfo.password.equals(AppConstants.EMPTY_STRING)) {
+                    if (!_appInfo.password.equals(AppConstants.EMPTY_STRING)) {
                         _passwordHint = AppConstants.EMPTY_STRING;
-                        _password = appInfo.password;
+                        _password = _appInfo.password;
                     }
                 }
             } catch (IOException fe) {
@@ -252,13 +355,12 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         this.registerReceiver(this._batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
         //time and date
-        _timeReceiver = new TimeBroadcastReceiver(this, _password, _adminEmail, _deviceName, _useTimeout, _availablePurchases) {
+        _timeReceiver = new TimeBroadcastReceiver(this, _password, _adminEmail, _deviceName, _useTimeout) {
         };
         _timeReceiver.setTextView((TextView) findViewById(R.id.currentTime));
-        _timeReceiver.setTimerInfo(appTimer);
+        _timeReceiver.setTimerInfo(_appTimer);
         this.registerReceiver(this._timeReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
-        //run the timer for the first time
-        _timeReceiver.onReceive(this, getIntent());
+        _timeReceiver.fire(this, getIntent());
 
         //timer for hiding the settings button
         _countdown = new CountDownTimer(AppConstants.POST_PHONE_CALL_WAIT, AppConstants.POST_PHONE_CALL_WAIT) {
@@ -277,9 +379,13 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         //callback from app info update
         this.registerReceiver(this._appInfoReceiver, new IntentFilter(AppConstants.APP_INFO_UPDATE_RECEIVER));
 
+        this.registerReceiver(this._timerToggleReceiver, new IntentFilter(AppConstants.TIMER_TOGGLE_RECEIVER));
+
+        this.registerReceiver(this._dailyTimerFireReceiver, new IntentFilter(AppConstants.TIMER_UPDATE_RECEIVER));
+
         Intent _serviceIntent = new Intent(this, AppStartService.class);
         _serviceIntent.putStringArrayListExtra(AppConstants.BLOCKED_APPS_LIST, _blockedApps);
-        _serviceIntent.putExtra(AppConstants.ADMIN_EMAIL, appInfo.adminEmail);
+        _serviceIntent.putExtra(AppConstants.ADMIN_EMAIL, _appInfo.adminEmail);
         _serviceIntent.putExtra(AppConstants.DEVICE_NAME, _deviceName);
         startService(_serviceIntent);
     }
@@ -288,6 +394,22 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         loadApps();
         loadListView();
         addClickListener();
+    }
+
+    public void timerClick(View v) {
+        _timeReceiver.set_shown();
+        Intent panel = new Intent(this, TimerUpActivity.class);
+        panel.putExtra(AppConstants.PASSWORD_EXTRA, _password);
+        panel.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
+        panel.putExtra(AppConstants.DEVICE_NAME, _deviceName);
+        panel.putExtra(AppConstants.USE_SCREEN_TIMEOUT, _useTimeout);
+        panel.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
+        panel.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_HISTORY);
+        try {
+            this.startActivity(panel);
+        } catch (Exception e) {
+            Log.d("LIC", e.toString());
+        }
     }
 
     public void showApps(View v) {
@@ -301,6 +423,19 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
             final Context context = this;
             AlertBox.ShowTextEntry3Button(context, "Authentication Required", "Enter Your Password", _passwordHint, "Unlock Home", "Settings", true, activity, null);
         }
+    }
+
+    public void setWallpaper(View v) {
+        Intent i = new Intent(AppConstants.APP_PAUSE_UPDATE_RECEIVER);
+        i.putExtra(AppConstants.PAUSE_APP_CHECK, true);
+        sendBroadcast(i);
+
+        _timeReceiver.pauseTimer();
+
+        Intent intent = new Intent();
+        intent.setType(AppConstants.IMAGE_SELECTION_LIST_ALL);
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, AppConstants.SELECT_PICTURE_STRING), AppConstants.SELECT_PICTURE_ACTIVITY_CODE);
     }
 
     //load the approved apps
@@ -406,7 +541,8 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
                 apps) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
-                if (apps.get(position).type.equals(AppConstants.BLOCKED_APP_TYPE) || apps.get(position).type.equals(AppConstants.SKIPPED_APP_TYPE)) return null;
+                if (apps.get(position).type.equals(AppConstants.BLOCKED_APP_TYPE) || apps.get(position).type.equals(AppConstants.SKIPPED_APP_TYPE))
+                    return null;
                 if (convertView == null) {
                     convertView = getLayoutInflater().inflate(R.layout.list_item, null);
                 }
@@ -443,6 +579,12 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
             public void onItemClick(AdapterView<?> av, View v, int pos,
                                     long id) {
                 if (_isHomeUnlocked) return;
+
+                //starting an app, so start the timer countdown
+                Intent intent = new Intent();
+                intent.putExtra(AppConstants.ADMIN_MODE, false);
+                intent.putExtra(AppConstants.PAUSE_SCREEN_TIMEOUT, false);
+                _timeReceiver.notShown(context, intent);
 
                 Intent i;
                 if (apps.get(pos).label.startsWith(AppConstants.TELEPHONE_APP_STARTNAME)) {
@@ -489,6 +631,35 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     private void ShowToast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
         toast.show();
+    }
+
+    @SuppressWarnings("deprecation")
+    private String getPath(Uri uri) {
+        // just some safety built in
+        if (uri == null) {
+            return null;
+        }
+        // try to retrieve the image from the media store first
+        // this will only work for images selected from gallery
+        String[] projection = {MediaStore.Images.Media.DATA};
+        Cursor cursor = managedQuery(uri, projection, null, null, null);
+        if (cursor != null) {
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        }
+        // this is our fallback here
+        return uri.getPath();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setViewBackground(String path, View view) {
+        File imgFile = new File(path);
+
+        if(imgFile.exists()) {
+            Drawable d = Drawable.createFromPath(imgFile.getAbsolutePath());
+            view.setBackgroundDrawable(d);
+        }
     }
 
     //AlertBox Callback Methods
@@ -563,6 +734,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
                 Intent i = new Intent(context, SettingsActivity.class);
                 i.putExtra(AppConstants.PASSWORD_EXTRA, _password);
                 i.putExtra(AppConstants.ADMIN_EMAIL, _adminEmail);
+                i.putExtra(AppConstants.USE_SCREEN_TIMEOUT, _useTimeout);
                 i.putExtra(AppConstants.IN_APP_PURCHASE_DATA, new InAppPurchaseDataWrapper(_availablePurchases));
                 startActivityForResult(i, AppConstants.MAIN_INTENT_CODE);
             } else {
@@ -576,12 +748,32 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            if (requestCode == AppConstants.MAIN_INTENT_CODE) {
-                _password = data.getStringExtra("pwd");
-                if (!_password.equals(new StringBuilder(AppConstants.DEFAULT_PWD_HINT).reverse().toString())) {
-                    _passwordHint = AppConstants.EMPTY_STRING;
-                }
-                initializeApps();
+            switch (requestCode) {
+                case AppConstants.MAIN_INTENT_CODE:
+                    _password = data.getStringExtra("pwd");
+                    if (!_password.equals(new StringBuilder(AppConstants.DEFAULT_PWD_HINT).reverse().toString())) {
+                        _passwordHint = AppConstants.EMPTY_STRING;
+                    }
+                    initializeApps();
+                    break;
+                case AppConstants.SELECT_PICTURE_ACTIVITY_CODE:
+                    try {
+                        Uri selectedImageUri = data.getData();
+                        String selectedImagePath = getPath(selectedImageUri);
+                        setViewBackground(selectedImagePath, findViewById(R.id.main_apps_list));
+                        _appInfo.wallpaper = selectedImagePath.replace("/", "~");
+                        DatabaseHandler db = DatabaseHandler.getInstance(this);
+                        db.updateAppInfo(_appInfo);
+                    } catch (Exception e) {
+                        Log.d(TAG, e.toString());
+                    }
+
+                    Intent i = new Intent(AppConstants.APP_PAUSE_UPDATE_RECEIVER);
+                    i.putExtra(AppConstants.PAUSE_APP_CHECK, false);
+                    sendBroadcast(i);
+
+                    _timeReceiver.resumeTimer();
+                    break;
             }
         }
     }

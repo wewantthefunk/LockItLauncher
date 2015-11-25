@@ -16,14 +16,14 @@ import java.util.List;
 public class DatabaseHandler extends SQLiteOpenHelper {
     // Database Info
     private static final String DATABASE_NAME = "postsDatabase";
-    private static final int DATABASE_VERSION = 12;
+    private static final int DATABASE_VERSION = 15;
 
     // Table Names
     private static final String TABLE_APPS = "apps";
     private static final String TABLE_APP_INFO = "appInfo";
     private static final String TABLE_TIMER = "appTimer";
 
-    // Apps Table Columns
+    // Table Columns
     private static final String KEY_APP_PACKAGE = "appPackage";
     private static final String KEY_APP_NAME = "appName";
     private static final String KEY_APP_TYPE = "appType";
@@ -33,6 +33,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String DEVICE_NAME_COLUMN = "deviceName";
     private static final String ADMIN_SCREENTIMEOUT = "screenTimeout";
     private static final String ADMIN_USE_TIMEOUT = "useTimeout";
+    private static final String ADMIN_WALLPAPER = "wallpaper";
     private static final String TIMER_TIME = "totalTime";
     private static final String TIMER_USER = "timerUser";
     private static final String TIMER_DATE = "timerDate";
@@ -82,9 +83,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 FIRST_TIME_COLUMN + " INTEGER, " +
                 PASSWORD_COLUMN + " TEXT," +
                 DEVICE_NAME_COLUMN + " TEXT," +
-                ADMIN_EMAIL_COLUMN + " TEXT" +
-                ADMIN_SCREENTIMEOUT + " INTEGER" +
-                ADMIN_USE_TIMEOUT + " TEXT" +
+                ADMIN_EMAIL_COLUMN + " TEXT," +
+                ADMIN_SCREENTIMEOUT + " INTEGER," +
+                ADMIN_USE_TIMEOUT + " TEXT," +
+                ADMIN_WALLPAPER + " TEXT" +
                 ")";
 
         try {
@@ -212,6 +214,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             if (appInfo.useTimout) values.put(ADMIN_USE_TIMEOUT, AppConstants.TRUE);
             else values.put(ADMIN_USE_TIMEOUT, AppConstants.FALSE);
             values.put(ADMIN_SCREENTIMEOUT, AppConstants.DEFAULT_SCREEN_TIMEOUT);
+            values.put(ADMIN_WALLPAPER, appInfo.wallpaper);
 
             // First try to update the user in case the user already exists in the database
             // This assumes userNames are unique
@@ -245,6 +248,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         result.lastUser = AppConstants.DEFAULT_USER;
         result.totalTime = AppConstants.DEFAULT_SCREEN_TIMEOUT;
         result.useTimout = false;
+        result.wallpaper = AppConstants.EMPTY_STRING;
 
         String POSTS_SELECT_QUERY = String.format("SELECT * FROM %s", TABLE_APP_INFO);
         try {
@@ -274,6 +278,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                             if (s.equals(AppConstants.TRUE))
                                 result.useTimout = false;
                         }
+                        col = cursor.getColumnIndex(ADMIN_WALLPAPER);
+                        if (col > -1)
+                            result.wallpaper = cursor.getString(col);
                     } while (cursor.moveToNext());
                 }
             } catch (Exception e) {
