@@ -2,7 +2,9 @@ package com.whitepaladingames.lockitlauncher;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.ActionBar;
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -15,7 +17,11 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Point;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,10 +30,15 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -44,6 +55,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,6 +81,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
     private boolean _timeoutPaused;
     private String marketAssociatedEmailId;
     private AppInfo _appInfo;
+    private boolean _loaded;
 
     private static String TAG = "LockIt";
 
@@ -119,6 +132,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launcher);
 
+        _loaded = false;
         _timeoutPaused = false;
 
         final Context context = this;
@@ -256,6 +270,17 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         i.putExtra(AppConstants.ADMIN_MODE, false);
         i.putExtra(AppConstants.PAUSE_SCREEN_TIMEOUT, true);
         _timeReceiver.notShown(this, i);
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (!_loaded) {
+            _loaded = true;
+            setViewBackground(_appInfo.wallpaper.replace("~", "/"), findViewById(R.id.main_apps_list));
+        }
+
     }
 
     @SuppressWarnings("deprecation")
@@ -285,7 +310,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         DatabaseHandler db = DatabaseHandler.getInstance(this);
 
         _appInfo = db.getAppInfo();
-        setViewBackground(_appInfo.wallpaper.replace("~", "/"), findViewById(R.id.main_apps_list));
+
         _adminEmail = _appInfo.adminEmail;
         _deviceName = _appInfo.deviceName;
         _useTimeout = _appInfo.useTimout;
@@ -432,10 +457,23 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
 
         _timeReceiver.pauseTimer();
 
+        //Intent intent = new Intent(this, WallpaperChangeActivity.class);
+        //startActivityForResult(intent, AppConstants.SELECT_PICTURE_ACTIVITY_CODE);
+
         Intent intent = new Intent();
         intent.setType(AppConstants.IMAGE_SELECTION_LIST_ALL);
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(Intent.createChooser(intent, AppConstants.SELECT_PICTURE_STRING), AppConstants.SELECT_PICTURE_ACTIVITY_CODE);
+    }
+
+    public void shutdownDevice(View v) {
+        try {
+            //Runtime.getRuntime().exec("adb shell getevent -i");
+            Runtime.getRuntime().exec("adb shell sendevent /dev/input/event1 1 116 0");
+            Runtime.getRuntime().exec("adb shell sendevent /dev/input/event1 1 116 1");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //load the approved apps
@@ -657,8 +695,47 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
         File imgFile = new File(path);
 
         if(imgFile.exists()) {
-            Drawable d = Drawable.createFromPath(imgFile.getAbsolutePath());
+            Display display = getWindowManager().getDefaultDisplay();
+            Point size = new Point();
+            display.getSize(size);
+            int width = size.x;
+            int height = size.y;
+            BitmapDrawable d = new BitmapDrawable(getResources(), imgFile.getAbsolutePath()); // BitmapDrawable.createFromPath(imgFile.getAbsolutePath());   //.createFromPath(imgFile.getAbsolutePath());
+            Bitmap d1 = Bitmap.createBitmap(d.getBitmap(), 0, 0, d.getBitmap().getWidth(), d.getBitmap().getHeight());
+
+            int product = d1.getWidth() / width;
+
+            if (d1.getHeight() < d1.getWidth()) {
+                product = d1.getHeight() / height;
+            }
+
+            Bitmap temp = Bitmap.createScaledBitmap(d1, d1.getWidth(), d1.getHeight(), true);
+
+            if (product > 1) {
+                product += 1;
+                int dHeight = d1.getHeight() / product;
+                int dWidth = d1.getWidth() / product;
+                temp = Bitmap.createScaledBitmap(d1, dWidth, dHeight, true);
+            }
+
+            int availableWidth = temp.getWidth() - width;
+            int x = availableWidth / 2;
+            if (x < 0) {
+                x = 0;
+            }
+
+            d1 = Bitmap.createBitmap(temp, x, 0, temp.getWidth() - x, temp.getHeight());
+            d = new BitmapDrawable(getResources(), d1);
+            d.setGravity(Gravity.CLIP_HORIZONTAL | Gravity.CENTER);
+            d.setTileModeXY(Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            view.setMinimumWidth(d.getIntrinsicWidth());
+            //view.setBackgroundResource();
+            //Bitmap b = findViewById();
+            //view.setBackground(d);
             view.setBackgroundDrawable(d);
+
+            //d1.recycle();
+            //temp.recycle();
         }
     }
 
@@ -758,6 +835,7 @@ public class LauncherActivity extends Activity implements IAlertBoxCaller {
                     break;
                 case AppConstants.SELECT_PICTURE_ACTIVITY_CODE:
                     try {
+                        //Uri selectedImageUri = Uri.parse(data.getStringExtra(AppConstants.WALLPAPER_URL));
                         Uri selectedImageUri = data.getData();
                         String selectedImagePath = getPath(selectedImageUri);
                         setViewBackground(selectedImagePath, findViewById(R.id.main_apps_list));

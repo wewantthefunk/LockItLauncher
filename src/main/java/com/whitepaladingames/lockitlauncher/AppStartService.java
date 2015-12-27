@@ -2,16 +2,23 @@ package com.whitepaladingames.lockitlauncher;
 
 import android.app.ActivityManager;
 import android.app.Service;
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -24,6 +31,7 @@ public class AppStartService extends Service {
     Context _context;
     private String _adminEmail;
     private String _deviceName;
+    private ActivityManager mActivityManager;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -78,6 +86,8 @@ public class AppStartService extends Service {
                 ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
                 List<ActivityManager.RunningAppProcessInfo> runningAppProcessInfo = am.getRunningAppProcesses();
                 ArrayList<String> current = new ArrayList<>();
+                ActivityManager.RunningAppProcessInfo newapp = new ActivityManager.RunningAppProcessInfo();
+                newapp.importance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
                 for (ActivityManager.RunningAppProcessInfo appProcess : runningAppProcessInfo) {
                     current.add(appProcess.processName);
 
@@ -85,7 +95,7 @@ public class AppStartService extends Service {
                         _running.add(appProcess.processName);
 
                     if (_blockedApps.contains(appProcess.processName)) {
-                        if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                        if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && !isRunningService(appProcess.processName)) {
                             if (!_cleared.contains(appProcess.processName) && !Arrays.asList(AppConstants.OK_APPS).contains(appProcess.processName)) {
                                 Intent panel = new Intent(_context, BlockedAppActivity.class);
                                 panel.putExtra(AppConstants.TASK_ID, appProcess.pid);
@@ -120,5 +130,23 @@ public class AppStartService extends Service {
         }, 0, 2500);
 
         return START_STICKY;
+    }
+
+    private boolean isRunningService(String processname){
+        if(processname==null || processname.isEmpty())
+            return false;
+
+        ActivityManager.RunningServiceInfo service;
+
+        if(mActivityManager==null) mActivityManager = (ActivityManager)_context.getSystemService(Context.ACTIVITY_SERVICE);
+        List <ActivityManager.RunningServiceInfo> l = mActivityManager.getRunningServices(9999);
+        Iterator <ActivityManager.RunningServiceInfo> i = l.iterator();
+        while(i.hasNext()){
+            service = i.next();
+            if(service.process.equals(processname))
+                return true;
+        }
+
+        return false;
     }
 }

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#333333">
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal"
+        android:background="#888888"
+        android:gravity="center_horizontal"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
+        android:text="Change Wallpaper"
+        android:textColor="#000000"
+        android:textSize="30dp"
+        android:id="@+id/wallpaperChangeHeader"
+        />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="30dp"
+        android:background="@mipmap/wallpaper"
+        android:id="@+id/wallpaperChangeButton"
+        android:onClick="setWallpaper"
+        android:layout_below="@id/wallpaperChangeHeader"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/wallpaperChangeButton"
+        android:text="Light Text"
+        android:layout_marginTop="12dp"
+        android:layout_marginRight="10dp"
+        android:id="@+id/wallpaperChangeLightText"
+        android:layout_below="@id/wallpaperChangeHeader"
+        />
+    <ToggleButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_toRightOf="@id/wallpaperChangeLightText"
+        android:layout_below="@id/wallpaperChangeHeader"
+        android:id="@+id/wallpaperChangeLightTextButton"
+        />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/wallpaperChangeHeader"
+        android:layout_alignParentRight="true"
+        android:text="Save"
+        android:layout_marginTop="5dp"
+        android:layout_marginRight="20dp"
+        android:id="@+id/wallpaperChangeSave"
+        android:onClick="saveWallpaper"
+        />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/wallpaperChangeButton">
+
+        <ListView
+            android:id="@+id/wallpaperChangePreviewList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#555555"
+            android:gravity="top"
+            android:tileMode="disabled"
+            ></ListView>
+    </RelativeLayout>
+</RelativeLayout>

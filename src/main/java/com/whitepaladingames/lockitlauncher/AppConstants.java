@@ -100,8 +100,9 @@ public class AppConstants {
     public static final int SELECT_PICTURE_ACTIVITY_CODE = 1232;
     public static final String SELECT_PICTURE_STRING = "Select Background";
     public static final String IMAGE_SELECTION_LIST_ALL = "image/*";
+    public static final String WALLPAPER_URL = "wallpaperURL";
 
-    public static final String[] OK_APPS = {"com.android.vending","com.google.android.gms","com.android.deskclock","com.google.android.apps.maps","com.android.settings","com.google.android.calendar"};
+    public static final String[] OK_APPS = {"com.android.vending","com.google.android.gms","com.android.deskclock","com.google.android.apps.maps","com.android.settings","com.google.android.calendar", "com.google.android.talk"};
 
     //"wewantthefunk73@gmail.com",
     public static final String[] DEBUG_EMAILS = {"wewantthefunk73@gmail.com", "marcsantini@gmail.com"};
